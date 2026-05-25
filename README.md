@@ -11,15 +11,62 @@
 | 技术博客 | RSS/Atom 订阅抓取（`fetch_rss_feed`） |
 | Redis | 聊天记忆（24h）、GitHub commit 缓存（10min） |
 | MySQL | 用户确认后保存技术报告 |
+| Docker | 一键部署 MySQL + Redis + App |
 
-## 环境要求
+## 架构图
 
-- Python 3.11+
-- MySQL 8+
-- Redis / [Memurai](https://www.memurai.com/)（Windows）
-- `.env` 配置文件
+```mermaid
+graph TD
+    User((用户)) -->|POST /api/v1/agent/run| FastAPI[FastAPI 服务]
+    FastAPI --> Agent[LangChain ReAct Agent]
+
+    subgraph Agent 工具集
+        Agent -->|查询提交| GitHub[GitHub API]
+        Agent -->|读取文件| GitHub
+        Agent -->|抓取 RSS| RSS[RSS/Atom]
+        Agent -->|全网搜索| Serper[Serper API]
+        Agent -->|读网页| Jina[r.jina.ai]
+        Agent -->|保存报告| MySQL[(MySQL)]
+    end
+
+    subgraph 缓存层
+        Redis[(Redis)] -.->|聊天记忆 24h| Agent
+        Redis -.->|Commit 缓存 10min| GitHub
+    end
+
+    FastAPI -->|返回答案| User
+    FastAPI -->|查询报告| MySQL
+```
 
 ## 快速开始
+
+### 方式一：Docker 运行（推荐）
+
+> 不需要手动安装 Python、MySQL、Redis，只需 [Docker Desktop](https://www.docker.com/products/docker-desktop/)。
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/jujuju-make/DevRelay-Agent.git
+cd DevRelay-Agent
+
+# 2. 配置环境变量
+cp .env.example .env
+# 编辑 .env，填入以下内容（至少填 OPENAI_API_KEY 和 GITHUB_TOKEN）：
+#   OPENAI_API_KEY=sk-xxx
+#   GITHUB_TOKEN=ghp_xxx
+#   SERPER_API_KEY=xxx（可选，搜索功能需要）
+
+# 3. 一键启动（MySQL + Redis + App）
+docker compose up -d
+
+# 4. 查看启动日志
+docker compose logs -f app
+
+# 5. 打开 Swagger 文档
+open http://127.0.0.1:8000/docs
+```
+
+### 方式二：本地运行
 
 ```powershell
 cd DevRelay-Agent
@@ -90,10 +137,36 @@ scripts/
 | `devrelay:chat:{session_id}` | 24h | 多轮对话记忆 |
 | `devrelay:commits:{owner}:{repo}:...` | 10min | GitHub commit 缓存 |
 
-查看会话：
+查看会话（本地运行）：
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\view_chat_history.py 你的session_id
+```
+
+查看会话（Docker 运行）：
+
+```bash
+docker exec -it devrelay-app python scripts/view_chat_history.py 你的session_id
+```
+
+## Docker 相关命令
+
+```bash
+# 启动所有服务
+docker compose up -d
+
+# 查看日志
+docker compose logs -f app
+
+# 停止所有服务
+docker compose down
+
+# 停止并删除数据卷（清空数据库）
+docker compose down -v
+
+# 重新构建镜像（修改代码后）
+docker compose build app
+docker compose up -d
 ```
 
 ## 工具列表（Agent）
@@ -107,4 +180,4 @@ scripts/
 
 ## 许可证
 
-课程 / 个人学习项目。
+MIT License — 个人学习 / 实习项目。

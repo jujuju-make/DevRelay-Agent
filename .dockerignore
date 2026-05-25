@@ -1,0 +1,11 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.idea/
+.cursor/
+chroma_db/
+README.md
+

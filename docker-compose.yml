@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  # ──────────────────────────────
+  # MySQL 8 数据库
+  # ──────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: devrelay-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: devrelay
+      MYSQL_USER: devrelay
+      MYSQL_PASSWORD: devrelay123
+    ports:
+      - "3307:3306" # 映射到 3307 避免与本地 MySQL 冲突
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  # ──────────────────────────────
+  # Redis 7 缓存
+  # ──────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: devrelay-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379" # 映射到 6380 避免与本地 Redis 冲突
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ──────────────────────────────
+  # DevRelay Agent 应用
+  # ──────────────────────────────
+  app:
+    build: .
+    container_name: devrelay-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # 覆盖 .env 中的连接地址，使用 Docker 内部服务名
+      - DATABASE_URL=mysql+aiomysql://devrelay:devrelay123@mysql:3306/devrelay
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
