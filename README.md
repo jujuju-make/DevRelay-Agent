@@ -80,6 +80,43 @@ python main.py
 
 访问 Swagger：http://127.0.0.1:8000/docs
 
+---
+
+## 运行测试
+
+测试代码位于 `tests/` 目录，使用 `pytest` 运行，无需外部依赖（所有网络请求都被 mock）：
+
+```bash
+# 安装测试依赖
+pip install -r requirements.txt
+
+# 运行全部测试
+pytest tests/ -v
+
+# 运行带覆盖率报告
+pytest tests/ -v --cov=app --cov-report=term-missing
+
+# 只运行某个测试文件
+pytest tests/test_health.py -v
+
+# 只运行某个测试类
+pytest tests/test_github_tools.py::TestFormatCommitsSummary -v
+```
+
+**测试覆盖范围：**
+
+| 测试文件 | 测试内容 |
+|----------|----------|
+| `test_health.py` | 健康检查 API 的正确性 |
+| `test_github_tools.py` | GitHub 工具、搜索工具、缓存键生成 |
+| `test_rss.py` | RSS/Atom 订阅解析、错误处理 |
+| `test_agent_logic.py` | Agent 编排逻辑、消息提取、来源提取 |
+| `test_cache.py` | Redis 缓存读写、异常处理 |
+| `test_chat_memory.py` | 聊天记忆存储与加载 |
+| `test_reports.py` | 报告 API、MySQL 归档工具 |
+
+---
+
 ## API 示例
 
 ### 运行 Agent
