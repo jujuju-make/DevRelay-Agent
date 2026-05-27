@@ -213,8 +213,8 @@ class TestReadGithubFile:
         result = await read_github_file.ainvoke(
             {"owner": "o", "repo": "r", "path": "nonexistent.md"}
         )
-        assert "读取文件失败" in result
-        assert "404" in result
+        assert "未找到仓库" in result
+        assert "o/r" in result
 
 
 class TestSearchWeb:

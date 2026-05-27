@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #333;
+    border-radius: 3px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+}
+
+@layer components {
+  .typing-cursor::after {
+    content: '▊';
+    animation: blink 1s step-end infinite;
+    color: #a3a3a3;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+}
