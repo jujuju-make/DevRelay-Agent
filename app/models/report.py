@@ -18,6 +18,7 @@ class Report(Base):
     repo_owner: Mapped[str | None] = mapped_column(String(128), nullable=True)
     repo_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     sources: Mapped[str | None] = mapped_column(Text, nullable=True, comment="来源 JSON 字符串")
+    sub_type: Mapped[str | None] = mapped_column(String(32), nullable=True, comment="子类型: auto_digest / manual")
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         server_default=func.now(),

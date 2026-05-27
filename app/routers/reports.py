@@ -27,13 +27,14 @@ async def list_reports(
         )
         reports = result.scalars().all()
 
-    items = [
+        items = [
         ReportSummary(
             id=r.id,
             title=r.title,
             query=r.query,
             repo_owner=r.repo_owner,
             repo_name=r.repo_name,
+            sub_type=r.sub_type,
             created_at=r.created_at,
         )
         for r in reports
@@ -61,6 +62,7 @@ async def get_report(report_id: int) -> ReportDetail:
         query=report.query,
         repo_owner=report.repo_owner,
         repo_name=report.repo_name,
+        sub_type=report.sub_type,
         sources=report.sources,
         created_at=report.created_at,
     )

@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Menu, X, Terminal, Github } from 'lucide-react'
+import { Menu, X, Terminal, Github, BookmarkCheck } from 'lucide-react'
 import ChatPanel from './components/ChatPanel'
 import MonitorPanel from './components/MonitorPanel'
 import ReportPanel from './components/ReportPanel'
+import SubscriptionPanel from './components/SubscriptionPanel'
 
 const API_BASE = '/api/v1'
 
@@ -22,7 +23,7 @@ const WELCOME_MESSAGE = {
 }
 
 export default function App() {
-  const [activeView, setActiveView] = useState('chat')       // chat | monitor | report
+  const [activeView, setActiveView] = useState('chat')       // chat | monitor | report | subscriptions
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedReportId, setSelectedReportId] = useState(null)
 
@@ -68,6 +69,10 @@ export default function App() {
           <NavBtn active={activeView === 'chat'} onClick={() => setActiveView('chat')}>
             AI 对话
           </NavBtn>
+          <NavBtn active={activeView === 'subscriptions'} onClick={() => setActiveView('subscriptions')}>
+            <BookmarkCheck size={14} className="inline mr-1" />
+            订阅管理
+          </NavBtn>
           <NavBtn active={activeView === 'monitor'} onClick={() => setActiveView('monitor')}>
             GitHub 监控
           </NavBtn>
@@ -98,6 +103,9 @@ export default function App() {
             <MobileNavBtn active={activeView === 'chat'} onClick={() => { setActiveView('chat'); setMobileMenuOpen(false) }}>
               💬 AI 对话
             </MobileNavBtn>
+            <MobileNavBtn active={activeView === 'subscriptions'} onClick={() => { setActiveView('subscriptions'); setMobileMenuOpen(false) }}>
+              📌 订阅管理
+            </MobileNavBtn>
             <MobileNavBtn active={activeView === 'monitor'} onClick={() => { setActiveView('monitor'); setMobileMenuOpen(false) }}>
               📡 GitHub 监控
             </MobileNavBtn>
@@ -117,6 +125,9 @@ export default function App() {
             messages={messages}
             setMessages={setMessages}
           />
+        )}
+        {activeView === 'subscriptions' && (
+          <SubscriptionPanel apiBase={API_BASE} />
         )}
         {activeView === 'monitor' && (
           <MonitorPanel apiBase={API_BASE} onViewReport={handleViewReport} />

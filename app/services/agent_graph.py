@@ -165,6 +165,7 @@ async def handle_archive_response(
                 repo_owner=repo_owner or None,
                 repo_name=repo_name or None,
                 sources=sources_json or None,
+                sub_type="manual",
             )
             session.add(report)
             await session.commit()

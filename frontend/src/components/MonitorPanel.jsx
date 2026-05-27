@@ -31,6 +31,7 @@ export default function MonitorPanel({ apiBase, onViewReport }) {
       )
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
       const data = await resp.json()
+      console.log('[MonitorPanel] loaded reports:', data.total, 'items:', data.items?.length)
       setReports(data.items || [])
       setTotal(data.total || 0)
     } catch (err) {
@@ -236,11 +237,16 @@ export default function MonitorPanel({ apiBase, onViewReport }) {
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('zh-CN', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  try {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return ''
+    return d.toLocaleDateString('zh-CN', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return ''
+  }
 }

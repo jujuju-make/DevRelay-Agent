@@ -9,6 +9,7 @@ class ReportSummary(BaseModel):
     query: str | None = None
     repo_owner: str | None = None
     repo_name: str | None = None
+    sub_type: str | None = None
     created_at: datetime
 
 
