@@ -46,7 +46,7 @@ export default function ChatPanel({ apiBase, sessionId, messages, setMessages })
         throw new Error(errData.detail || `HTTP ${resp.status}`)
       }
       const data = await resp.json()
-      const fullAnswer = data.answer || '（Agent 未返回内容）'
+      fullAnswer = data.answer || '（Agent 未返回内容）'
       shouldOfferArchive = data.pending_archive || false
 
       // Typewriter streaming effect

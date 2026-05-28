@@ -59,7 +59,7 @@ async def _ai_summarize(owner: str, repo: str, commits: list[dict]) -> str:
 async def _build_digest_for_sub(sub: Subscription) -> dict:
     """为单个订阅生成日报并保存。"""
     today = datetime.now().strftime("%Y-%m-%d")
-    title = f"[自动日报] {sub.repo_owner}/{sub.repo_name} — {today}"
+    raw_title = f"[自动日报] {sub.repo_owner}/{sub.repo_name} — {today}"
 
     # 1. 抓取 commits
     commits = await fetch_repo_commits(
@@ -69,7 +69,7 @@ async def _build_digest_for_sub(sub: Subscription) -> dict:
     )
 
     # 2. 构建内容
-    content_parts = [f"# {title}\n"]
+    content_parts = [f"# {raw_title}\n"]
 
     # AI 总结
     summary = await _ai_summarize(sub.repo_owner, sub.repo_name, commits)
@@ -88,6 +88,9 @@ async def _build_digest_for_sub(sub: Subscription) -> dict:
         content_parts.append("*近 24 小时无新提交。*\n")
 
     content = "\n".join(content_parts)
+
+    # 3. 用 owner/repo 作为标题
+    title = f"{sub.repo_owner}/{sub.repo_name}"
 
     # 3. 来源
     sources_json = ""

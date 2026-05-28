@@ -254,8 +254,10 @@ async def save_to_mysql(
 
     仅在用户明确表示希望保存报告时调用此工具。
 
+    注意：title 参数会被自动替换为 AI 生成的内容总结，你传什么都会被覆盖。
+
     Args:
-        title: 报告标题
+        title: （会被自动覆盖）随意传即可
         content: 报告正文（Markdown 或纯文本）
         query: 用户原始问题（可选）
         repo_owner: 相关 GitHub 仓库 owner（可选）
@@ -267,11 +269,25 @@ async def save_to_mysql(
         parts = [s.strip() for s in sources.split(",") if s.strip()]
         sources_json = json.dumps(parts, ensure_ascii=False)
 
+    # ── 用 LLM 自动生成标题摘要 ──
+    auto_title = await _generate_digest_title(content, query, repo_owner, repo_name)
+    if not auto_title:
+        auto_title = title[:255]  # fallback 到 AI 传的
+
+    # 最终检查：如果标题以开场白开头，直接从 content 取第一行
+    bad_prefixes = ("好的", "以下是", "这次", "当然", "我来", "让我", "下面", "关于")
+    if auto_title.startswith(bad_prefixes) or auto_title.strip() == "":
+        # 取 content 第一行（去掉 # 标题行），最多 60 字
+        first_line = content.split("\n")[0].lstrip("#").strip()
+        if len(first_line) > 60:
+            first_line = first_line[:57] + "..."
+        auto_title = first_line if first_line else title[:255]
+
     try:
         factory = get_session_factory()
         async with factory() as session:
             report = Report(
-                title=title[:255],
+                title=auto_title[:255],
                 content=content,
                 query=query or None,
                 repo_owner=repo_owner or None,
@@ -285,6 +301,44 @@ async def save_to_mysql(
         return f"⚠️ 保存报告到数据库失败：{e}"
 
     return f"报告已成功保存到 MySQL，归档 ID: {report.id}，标题: {report.title}"
+
+
+async def _generate_digest_title(
+    content: str,
+    query: str = "",
+    repo_owner: str = "",
+    repo_name: str = "",
+) -> str:
+    """用 LLM 根据报告内容生成一句精炼的标题（10~30 字）。"""
+    settings = get_settings()
+    if not settings.openai_api_key:
+        return ""
+
+    repo_hint = f"（仓库 {repo_owner}/{repo_name}）" if repo_owner and repo_name else ""
+    query_hint = f"用户问题：{query}" if query else ""
+
+    # 取 content 前 1000 字做摘要
+    content_sample = content[:1000]
+
+    try:
+        llm = ChatOpenAI(
+            api_key=settings.openai_api_key,
+            base_url=settings.openai_api_base,
+            model=settings.openai_model,
+            temperature=0.3,
+        )
+        resp = await llm.ainvoke(
+            f"为以下内容生成一个归档标题。\n"
+            f"规则：只用一句话概括核心内容，10~30字。禁止以「好的」「以下是」「关于」「报告」「分析」「总结」「让我」「我来」「这次」「当然」「下面」开头。直接输出标题本身，不要加引号。\n\n"
+            f"{repo_hint} {query_hint}\n\n"
+            f"内容：\n{content_sample}"
+        )
+        title = resp.content.strip() if resp.content else ""
+        # 清理可能的引号
+        title = title.strip('"').strip("'").strip("「").strip("」")
+        return title[:255]
+    except Exception:
+        return ""
 
 
 async def get_github_updates(owner: str, repo: str) -> str:

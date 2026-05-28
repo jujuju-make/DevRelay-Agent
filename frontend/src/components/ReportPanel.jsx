@@ -151,15 +151,20 @@ export default function ReportPanel({ apiBase, reportId, onBack }) {
         </div>
 
         {sources.length > 0 && (
-          <div className="shrink-0 mb-6">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 mb-2"><Globe size={12} />来源</div>
-            <div className="flex flex-wrap gap-2">
-              {sources.map((src, idx) => (
-                <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-neutral-900 border border-neutral-800 text-xs text-neutral-400 font-mono">
-                  <ExternalLink size={10} />{src}
-                </span>
-              ))}
-            </div>
+          <div className="shrink-0 mb-4">
+            <details className="text-xs text-neutral-500">
+              <summary className="cursor-pointer hover:text-neutral-300 select-none inline-flex items-center gap-1">
+                <Globe size={12} />
+                来源（{sources.length}）
+              </summary>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {sources.map((src, idx) => (
+                  <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-neutral-900 border border-neutral-800 text-xs text-neutral-400 font-mono">
+                    <ExternalLink size={10} />{src}
+                  </span>
+                ))}
+              </div>
+            </details>
           </div>
         )}
 
@@ -221,8 +226,11 @@ export default function ReportPanel({ apiBase, reportId, onBack }) {
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-neutral-200 truncate block">{r.title || '(无标题)'}</span>
                 <div className="flex items-center gap-3 mt-1 text-xs text-neutral-500">
-                  {r.repo_owner && <span className="font-mono">{r.repo_owner}/{r.repo_name}</span>}
-                  <span>{safeFormatDate(r.created_at)}</span>
+                  {r.repo_owner ? (
+                    <span className="font-mono">{r.repo_owner}/{r.repo_name}</span>
+                  ) : (
+                    <span>{safeFormatDate(r.created_at)}</span>
+                  )}
                 </div>
               </div>
             </button>
