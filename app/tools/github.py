@@ -294,6 +294,117 @@ async def get_github_updates(owner: str, repo: str) -> str:
     )
 
 
+async def fetch_commit_diff(
+    owner: str,
+    repo: str,
+    commit_sha: str,
+) -> dict[str, Any]:
+    """
+    获取某个 commit 的详细 diff（patch 格式）和文件变更列表。
+
+    Returns:
+        包含 sha, message, files (每个文件有 filename, status, patch, additions, deletions) 的 dict
+    """
+    settings = get_settings()
+    url = f"{settings.github_api_base}/repos/{owner}/{repo}/commits/{commit_sha}"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(url, headers=_github_headers())
+        response.raise_for_status()
+        data = response.json()
+
+    commit_data = data.get("commit", {})
+    files = data.get("files", [])
+
+    result: dict[str, Any] = {
+        "sha": data.get("sha", commit_sha)[:7],
+        "message": commit_data.get("message", "").split("\n")[0],
+        "author": commit_data.get("author", {}).get("name", "Unknown"),
+        "date": commit_data.get("author", {}).get("date", "")[:10],
+        "total_changes": {
+            "additions": data.get("stats", {}).get("additions", 0),
+            "deletions": data.get("stats", {}).get("deletions", 0),
+            "total": data.get("stats", {}).get("total", 0),
+        },
+        "files": [],
+    }
+
+    for f in files[:20]:  # 最多返回 20 个文件
+        file_info = {
+            "filename": f.get("filename", ""),
+            "status": f.get("status", "modified"),  # added, modified, removed
+            "additions": f.get("additions", 0),
+            "deletions": f.get("deletions", 0),
+            "changes": f.get("changes", 0),
+            "patch": f.get("patch", ""),
+        }
+        result["files"].append(file_info)
+
+    return result
+
+
+def _format_diff_for_review(diff_data: dict[str, Any]) -> str:
+    """将 diff 数据格式化为便于 AI 审查的文本形式。"""
+    lines = [
+        f"## Commit {diff_data['sha']} by {diff_data['author']} ({diff_data['date']})",
+        f"**Message**: {diff_data['message']}",
+        f"**Changes**: +{diff_data['total_changes']['additions']} / -{diff_data['total_changes']['deletions']} / {diff_data['total_changes']['total']} files changed",
+        "",
+    ]
+
+    for f in diff_data["files"]:
+        status_icon = {"added": "🆕", "modified": "📝", "removed": "🗑️"}.get(
+            f["status"], "📄"
+        )
+        lines.append(
+            f"### {status_icon} {f['filename']} ({f['status']}, +{f['additions']}/-{f['deletions']})"
+        )
+        if f.get("patch"):
+            # patch 有长度限制，防止工具返回太长
+            patch = f["patch"]
+            max_patch_len = 4000
+            if len(patch) > max_patch_len:
+                patch = patch[:max_patch_len] + "\n...(diff 截断)"
+            lines.append(f"```diff\n{patch}\n```")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+@tool
+async def review_commit_diff(owner: str, repo: str, commit_sha: str) -> str:
+    """
+    获取 GitHub 仓库某个 commit 的完整 diff 内容（具体修改了哪些行代码）。
+
+    当你需要分析某次 commit 的具体代码变更时使用此工具，例如：
+    - 用户问「这个 commit 改了哪些底层逻辑？」
+    - 想了解某次改动的代码影响范围
+    - 需要审查是否有安全隐患（如 SQL 注入、敏感信息泄露）
+
+    **注意**：工具只返回原始 diff 数据，你需要根据返回的代码变化自行分析：
+    - 是否修改了核心业务逻辑
+    - 是否修改了 Pydantic Model / 数据库 Schema
+    - 是否引入了安全风险（SQL 注入、硬编码密钥等）
+    - 变更是否合理
+
+    Args:
+        owner: GitHub 用户名或组织名，例如 fastapi
+        repo: 仓库名，例如 fastapi
+        commit_sha: commit 的完整 SHA（40 位）或短 SHA（7 位）
+    """
+    try:
+        diff_data = await fetch_commit_diff(owner, repo, commit_sha)
+        return _format_diff_for_review(diff_data)
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return f"⚠️ 未找到 commit `{commit_sha[:7]}` 在仓库 `{owner}/{repo}` 中，请检查 SHA 是否正确。"
+        return _format_github_error(owner, repo, e.response.status_code)
+    except httpx.RequestError as e:
+        return f"⚠️ 无法连接到 GitHub API：{e}"
+    except Exception as e:
+        return f"⚠️ 获取 commit diff 时发生未知错误：{e}"
+
+
 if __name__ == "__main__":
     import asyncio
 
@@ -303,10 +414,11 @@ if __name__ == "__main__":
             {"owner": "fastapi", "repo": "fastapi", "per_page": 5}
         )
         print(commits_summary)
-        print("\n=== search_web ===")
-        web_summary = await search_web.ainvoke(
-            {"query": "FastAPI 0.115 release notes review", "num_results": 3}
+
+        print("\n=== review_commit_diff ===")
+        diff = await review_commit_diff.ainvoke(
+            {"owner": "fastapi", "repo": "fastapi", "commit_sha": "HEAD"}
         )
-        print(web_summary)
+        print(diff)
 
     asyncio.run(main())
