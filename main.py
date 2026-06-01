@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi import APIRouter
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app import __version__
 from app.config import get_settings
@@ -71,6 +73,12 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         debug=settings.debug,
     )
+
+    # ── 挂载前端静态文件 ──
+    static_dir = Path(__file__).resolve().parent / "static"
+    if static_dir.exists():
+        app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="frontend")
+
     app.include_router(api_router, prefix=settings.api_prefix)
 
         # 手动触发日报的端点
@@ -108,3 +116,4 @@ if __name__ == "__main__":
         port=settings.port,
         reload=settings.debug,
     )
+
