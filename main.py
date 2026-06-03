@@ -75,9 +75,15 @@ def create_app() -> FastAPI:
     )
 
     # ── 挂载前端静态文件 ──
-    static_dir = Path(__file__).resolve().parent / "static"
-    if static_dir.exists():
-        app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="frontend")
+    frontend_dir = Path(__file__).resolve().parent / "frontend" / "dist"
+
+    if frontend_dir.exists():
+    # 2. 挂载静态文件
+        app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+        print(f"✅ 成功挂载前端目录: {frontend_dir}")
+    else:
+    # 3. 这里的打印非常重要，如果报错了，去 docker logs 里看这个输出
+        print(f"❌ 警告：找不到前端目录 {frontend_dir}，请检查文件夹是否存在")
 
     app.include_router(api_router, prefix=settings.api_prefix)
 
