@@ -74,17 +74,6 @@ def create_app() -> FastAPI:
         debug=settings.debug,
     )
 
-    # ── 挂载前端静态文件 ──
-    frontend_dir = Path(__file__).resolve().parent / "frontend" / "dist"
-
-    if frontend_dir.exists():
-    # 2. 挂载静态文件
-        app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
-        print(f"✅ 成功挂载前端目录: {frontend_dir}")
-    else:
-    # 3. 这里的打印非常重要，如果报错了，去 docker logs 里看这个输出
-        print(f"❌ 警告：找不到前端目录 {frontend_dir}，请检查文件夹是否存在")
-
     app.include_router(api_router, prefix=settings.api_prefix)
 
         # 手动触发日报的端点
@@ -105,6 +94,18 @@ def create_app() -> FastAPI:
         return {"count": len(results), "results": results}
 
     app.include_router(digest_router, prefix=settings.api_prefix)
+
+    # ── 挂载前端静态文件 ──
+    frontend_dir = Path(__file__).resolve().parent / "frontend" / "dist"
+
+    if frontend_dir.exists():
+    # 2. 挂载静态文件
+        app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+        print(f"✅ 成功挂载前端目录: {frontend_dir}")
+    else:
+    # 3. 这里的打印非常重要，如果报错了，去 docker logs 里看这个输出
+        print(f"❌ 警告：找不到前端目录 {frontend_dir}，请检查文件夹是否存在")
+
 
     return app
 
