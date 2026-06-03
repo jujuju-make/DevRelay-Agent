@@ -1,9 +1,11 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { Menu, X, Terminal, Github, BookmarkCheck } from 'lucide-react'
 import ChatPanel from './components/ChatPanel'
 import MonitorPanel from './components/MonitorPanel'
 import ReportPanel from './components/ReportPanel'
 import SubscriptionPanel from './components/SubscriptionPanel'
+import UserMenu from './components/UserMenu'
+import { useAuth } from './contexts/AuthContext'
 
 const API_BASE = '/api/v1'
 
@@ -23,6 +25,7 @@ const WELCOME_MESSAGE = {
 }
 
 export default function App() {
+  const { username } = useAuth()
   const [activeView, setActiveView] = useState('chat')       // chat | monitor | report | subscriptions
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedReportId, setSelectedReportId] = useState(null)
@@ -62,6 +65,11 @@ export default function App() {
             <span className="text-sm font-semibold text-neutral-100 tracking-tight">DevRelay</span>
           </div>
           <span className="hidden sm:inline text-[11px] text-neutral-600 font-mono">v0.1.0</span>
+          {username && (
+            <span className="hidden sm:inline text-[11px] text-neutral-500 ml-1">
+              · {username}
+            </span>
+          )}
         </div>
 
         {/* Desktop Nav */}
@@ -90,9 +98,7 @@ export default function App() {
           >
             <Github size={16} />
           </a>
-          <div className="w-6 h-6 rounded-full bg-neutral-700 flex items-center justify-center text-[11px] font-medium text-neutral-300">
-            D
-          </div>
+          <UserMenu />
         </div>
       </header>
 

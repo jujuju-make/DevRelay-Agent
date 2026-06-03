@@ -32,11 +32,13 @@ class Settings(BaseSettings):
 
     serper_api_key: str = ""
 
+    # ── JWT 认证 ──
+    jwt_secret_key: str = "devrelay-jwt-secret-change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 480  # 8 小时
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
-
-
 

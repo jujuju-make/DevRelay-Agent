@@ -46,6 +46,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     from app.models.report import Report  # noqa: F401 — 注册 ORM 模型
+    from app.models.user import User  # noqa: F401 — 注册用户模型
 
     engine = get_engine()
     async with engine.begin() as conn:
@@ -58,3 +59,4 @@ async def close_db() -> None:
         await _engine.dispose()
         _engine = None
         _session_factory = None
+
