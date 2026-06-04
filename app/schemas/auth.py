@@ -9,8 +9,8 @@ class RegisterRequest(BaseModel):
     @field_validator("username")
     @classmethod
     def validate_username(cls, v: str) -> str:
-        if len(v) < 3 or len(v) > 64:
-            raise ValueError("用户名长度需在 3-64 之间")
+        if len(v) < 1 or len(v) > 64:
+            raise ValueError("用户名长度需在 1-64 之间")
         return v.strip()
 
     @field_validator("password")

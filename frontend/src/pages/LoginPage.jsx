@@ -28,6 +28,7 @@ export default function LoginPage() {
       return
     }
 
+
     if (mode === 'register') {
       if (!email.trim()) {
         setError('请填写邮箱')
